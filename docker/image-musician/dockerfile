@@ -2,5 +2,5 @@ FROM amazoncorretto:21
 
 WORKDIR /app
 COPY app/target/musician-1.0.jar /app/musician.jar
-
-CMD ["java", "-jar", "/app/musician.jar"]
+EXPOSE 9904
+ENTRYPOINT ["java", "-jar", "/app/musician.jar"]
