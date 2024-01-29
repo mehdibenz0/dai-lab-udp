@@ -13,6 +13,7 @@ public class Auditor {
     private static final int TCP_PORT = 2205;
     private final Map<String, Musician> activeMusicians = new ConcurrentHashMap<>();
     private static final Map<String, String> SOUND_TO_INSTRU_MAP = new HashMap<>();
+    private final int ACTIVITY_TIME_LIMIT = 5000;
 
     static {
         SOUND_TO_INSTRU_MAP.put("ti-ta-ti", "piano");
@@ -40,11 +41,11 @@ public class Auditor {
     }
     public static void main(String[] args) {
         Auditor auditor = new Auditor();
-        auditor.startUdpListener();
-        auditor.startTcpServer();
+        auditor.startUDPListener();
+        auditor.startTCPServer();
     }
 
-    private void startUdpListener() {
+    private void startUDPListener() {
         new Thread(() -> {
             try (MulticastSocket socket = new MulticastSocket(UDP_PORT)) {
                 InetSocketAddress group_address =  new InetSocketAddress(MULTICAST_ADDRESS, UDP_PORT);
@@ -76,10 +77,10 @@ public class Auditor {
         activeMusicians.put(musician.uuid, musician);
         // Remove inactive musicians
         long currentTime = System.currentTimeMillis();
-        activeMusicians.entrySet().removeIf(entry -> currentTime - entry.getValue().lastActivity > 5000);
+        activeMusicians.entrySet().removeIf(entry -> currentTime - entry.getValue().lastActivity > ACTIVITY_TIME_LIMIT);
     }
 
-    private void startTcpServer() {
+    private void startTCPServer() {
         new Thread(() -> {
             try (ServerSocket serverSocket = new ServerSocket(TCP_PORT)) {
                 while (true) {
@@ -87,7 +88,7 @@ public class Auditor {
                         PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
                         // Remove inactive musicians
                         long currentTime = System.currentTimeMillis();
-                        activeMusicians.entrySet().removeIf(entry -> currentTime - entry.getValue().lastActivity > 5000);
+                        activeMusicians.entrySet().removeIf(entry -> currentTime - entry.getValue().lastActivity > ACTIVITY_TIME_LIMIT);
                         // Send active musicians
                         String jsonResponse = new Gson().toJson(new ArrayList<>(activeMusicians.values()));
                         out.println(jsonResponse);
@@ -98,5 +99,4 @@ public class Auditor {
             }
         }).start();
     }
-
 }
