@@ -1,7 +1,6 @@
-FROM openjdk:8-jre-alpine
-
+FROM openjdk:21
 WORKDIR /app
-
 COPY app/target/auditor-1.0.jar /app/auditor.jar
 
+ENV CLASSPATH /app:/app/lib/*
 CMD ["java", "-jar", "/app/auditor.jar"]
