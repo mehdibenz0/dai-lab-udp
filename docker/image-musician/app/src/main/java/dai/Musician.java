@@ -37,6 +37,17 @@ public class Musician {
         this.instrumentSound = INSTRU_TO_SOUND_MAP.getOrDefault(instrument, "Unknown Instrument");
     }
 
+    public static void main(String[] args) {
+        String instrument = args[0];
+        if (args.length != 1){
+            throw new IllegalArgumentException("Not enough or too many arguments.");
+        }
+        if (!INSTRU_TO_SOUND_MAP.containsKey(instrument)) {
+            throw new IllegalArgumentException("Instrument not valid: ");
+        }
+        new Musician(instrument).play();
+    }
+
     public void play() {
         try (DatagramSocket socket = new DatagramSocket();){
             while (true) {
@@ -56,16 +67,4 @@ public class Musician {
             e.printStackTrace();
         }
     }
-
-    public static void main(String[] args) {
-        String instrument = args[0];
-        if (args.length != 1){
-            throw new IllegalArgumentException("Not enough or too many arguments.");
-        }
-        if (!INSTRU_TO_SOUND_MAP.containsKey(instrument)) {
-            throw new IllegalArgumentException("Instrument not valid: ");
-        }
-        new Musician(instrument).play();
-    }
-
 }
