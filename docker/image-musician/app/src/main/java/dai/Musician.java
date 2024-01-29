@@ -1,71 +1,71 @@
 package dai;
-
-import com.google.gson.Gson;
-
 import java.io.IOException;
-import java.net.DatagramSocket;
-import java.net.DatagramPacket;
-import java.net.InetSocketAddress;
+import java.net.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import com.google.gson.Gson;
 
-import static java.nio.charset.StandardCharsets.*;
+public class Musician {
 
-class Musician {
-    private final static String IPADDRESS = "239.255.22.5";
-    private final static int PORT = 9904;
-    private static final Map<String, String> INSTRUMENT_SOUND_MAP = new HashMap<>();
-    static {
-        INSTRUMENT_SOUND_MAP.put("ti-ta-ti", "piano");
-        INSTRUMENT_SOUND_MAP.put("pouet", "trumpet");
-        INSTRUMENT_SOUND_MAP.put("trulu", "flute");
-        INSTRUMENT_SOUND_MAP.put("gzi-gzi", "violin");
-        INSTRUMENT_SOUND_MAP.put("boum-boum", "drum");
-    }
-
-    private String sound;
+    private static final String MULTICAST_ADDRESS = "239.255.22.5";
+    private static final int PORT = 9904;
     private final UUID uuid;
+    private final String instrumentSound;
+    private static final Map<String, String> INSTRU_TO_SOUND_MAP = new HashMap<>();
 
-
-    public Musician(String sound, UUID uuid) throws IOException {
-        this.sound = sound;
-        this.uuid = uuid;
+    static {
+        INSTRU_TO_SOUND_MAP.put("piano", "ti-ta-ti");
+        INSTRU_TO_SOUND_MAP.put("trumpet", "pouet");
+        INSTRU_TO_SOUND_MAP.put("flute", "trulu");
+        INSTRU_TO_SOUND_MAP.put("violin", "gzi-gzi");
+        INSTRU_TO_SOUND_MAP.put("drum", "boum-boum");
     }
 
-    public void run() {
-        Gson gson = new Gson();
-        String message = gson.toJson(this);
-        byte[] payload = message.getBytes(UTF_8);
-        DatagramPacket packet = new DatagramPacket(payload,
-                payload.length, new InetSocketAddress(IPADDRESS, PORT));
+    private static class MusicianData {
+        String uuid;
+        String sound;
 
-        try (DatagramSocket socket = new DatagramSocket()) {
-            socket.send(packet);
-            System.out.println("Sent packet: " + message);
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
+        MusicianData(String uuid, String sound){
+            this.uuid = uuid;
+            this.sound = sound;
         }
     }
 
-    public static void main(String[] args) throws IOException {
-        String instrument = args[0];
-        if (args.length != 1){
-            throw new IllegalArgumentException("Not enough or too many arguments.");
-        }
-        if (!INSTRUMENT_SOUND_MAP.containsKey(instrument)) {
-            throw new IllegalArgumentException("Instrument not valid: ");
-        }
-        final int rythm = 1000;
-        Musician musician = new Musician(INSTRUMENT_SOUND_MAP.get(instrument), UUID.randomUUID());
-        while (true) {
-                musician.run();
+    public Musician(String instrument) {
+        this.uuid = UUID.randomUUID();
+        this.instrumentSound = INSTRU_TO_SOUND_MAP.getOrDefault(instrument, "Unknown Instrument");
+    }
+
+    public void play() {
+        try (DatagramSocket socket = new DatagramSocket();){
+            while (true) {
+                String messageJson = new Gson().toJson(new MusicianData(uuid.toString(), instrumentSound));
+                byte[] buffer = messageJson.getBytes();
+                InetSocketAddress dest_address = new InetSocketAddress(MULTICAST_ADDRESS, PORT);
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, dest_address);
+                socket.send(packet);
                 try {
-                    Thread.sleep(rythm);
+                    Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
+
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+    }
+
+    public static void main(String[] args) {
+        String instrument = args[0];
+        if (args.length != 1){
+            throw new IllegalArgumentException("Not enough or too many arguments.");
+        }
+        if (!INSTRU_TO_SOUND_MAP.containsKey(instrument)) {
+            throw new IllegalArgumentException("Instrument not valid: ");
+        }
+        new Musician(instrument).play();
+    }
 
 }
